@@ -41,8 +41,12 @@ def append(
     origem: str,
     payload: dict[str, Any],
     dedupe_key: str | None = None,
-) -> Evento:
-    """Anexa um evento à cadeia do tenant; idempotente por dedupe_key."""
+) -> tuple[Evento, bool]:
+    """Anexa um evento à cadeia do tenant; idempotente por dedupe_key.
+
+    Devolve (evento, criado): criado=False no replay de dedupe_key — o
+    evento devolvido é o já existente e nada é inserido.
+    """
     if not isinstance(payload, dict):
         raise ValueError("payload deve ser objeto JSON")
     validar_payload(payload)
@@ -53,8 +57,8 @@ def append(
         if dedupe_key is not None:
             existente = _por_dedupe(conn, tid, dedupe_key)
             if existente is not None:
-                return existente
-        return _novo_evento(conn, tid, tipo, origem, payload, dedupe_key)
+                return existente, False
+        return _novo_evento(conn, tid, tipo, origem, payload, dedupe_key), True
 
 
 def _novo_evento(
@@ -113,14 +117,20 @@ def _evento_da_linha(linha: tuple) -> Evento:
     )
 
 
-def ler_cadeia(conn: psycopg.Connection, tenant_id: UUID | str) -> list[Evento]:
-    """Todos os eventos do tenant em ordem de seq (sob a visão RLS da conexão)."""
+def ler_cadeia(
+    conn: psycopg.Connection,
+    tenant_id: UUID | str,
+    desde_seq: int = 1,
+    limite: int | None = None,
+) -> list[Evento]:
+    """Eventos do tenant em ordem de seq (visão RLS), com paginação opcional."""
     tid = str(tenant_id)
     with conn.transaction():
         set_tenant(conn, tid)
         linhas = conn.execute(
-            f"select {_COLUNAS} from core.events where tenant_id = %s order by seq",
-            (tid,),
+            f"select {_COLUNAS} from core.events"
+            " where tenant_id = %s and seq >= %s order by seq limit %s",
+            (tid, desde_seq, limite),
         ).fetchall()
     return [_evento_da_linha(linha) for linha in linhas]
 

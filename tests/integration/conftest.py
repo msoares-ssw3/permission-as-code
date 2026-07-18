@@ -5,13 +5,15 @@ próprios (uuid novo) e os testes só enxergam o que a RLS permite.
 """
 
 import hashlib
-from collections.abc import Iterator
-from uuid import UUID
+from collections.abc import Callable, Iterator
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
+from fastapi.testclient import TestClient
 from psycopg.types.json import Jsonb
 
+from src.api.main import app
 from src.shared.config import APP_DATABASE_URL, DATABASE_URL
 
 GENESIS = "0" * 64
@@ -52,6 +54,33 @@ def tenant_novo() -> UUID:
         assert linha is not None
         conn.commit()
     return linha[0]
+
+
+@pytest.fixture
+def client() -> Iterator[TestClient]:
+    """Cliente httpx (TestClient) apontando direto para o app ASGI."""
+    with TestClient(app) as cliente:
+        yield cliente
+
+
+@pytest.fixture
+def tenant_api() -> Callable[[], tuple[UUID, str]]:
+    """Factory de tenants com API key conhecida (chave única por chamada)."""
+
+    def criar() -> tuple[UUID, str]:
+        chave = f"chave-{uuid4().hex}"
+        chave_hash = hashlib.sha256(chave.encode()).hexdigest()
+        with psycopg.connect(DATABASE_URL) as conn:
+            linha = conn.execute(
+                "insert into core.tenants (nome, api_key_hash)"
+                " values ('tenant-api', %s) returning id",
+                (chave_hash,),
+            ).fetchone()
+            assert linha is not None
+            conn.commit()
+        return linha[0], chave
+
+    return criar
 
 
 @pytest.fixture

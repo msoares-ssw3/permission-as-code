@@ -42,7 +42,7 @@ def test_recomputo_da_cadeia_bate(entrada: list[tuple[str, dict[str, Any]]]) -> 
     tid = _tenant_novo()
     with psycopg.connect(APP_DATABASE_URL) as conn:
         anexados = [
-            chain.append(conn, tid, tipo, "prop", payload)
+            chain.append(conn, tid, tipo, "prop", payload)[0]
             for tipo, payload in entrada
         ]
         do_banco = chain.ler_cadeia(conn, tid)

@@ -12,8 +12,9 @@ from src.core import chain
 def test_genesis_e_encadeamento(
     app_conn: psycopg.Connection, tenant_novo: UUID
 ) -> None:
-    e1 = chain.append(app_conn, tenant_novo, "t", "s2", {"n": 1})
-    e2 = chain.append(app_conn, tenant_novo, "t", "s2", {"n": 2})
+    e1, criado1 = chain.append(app_conn, tenant_novo, "t", "s2", {"n": 1})
+    e2, criado2 = chain.append(app_conn, tenant_novo, "t", "s2", {"n": 2})
+    assert criado1 and criado2
     assert e1.seq == 1 and e1.prev_hash == chain.GENESIS
     assert e2.seq == 2 and e2.prev_hash == e1.hash
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+00:00", e1.ts)
@@ -22,8 +23,9 @@ def test_genesis_e_encadeamento(
 def test_dedupe_replay_nao_duplica(
     app_conn: psycopg.Connection, admin_conn: psycopg.Connection, tenant_novo: UUID
 ) -> None:
-    a = chain.append(app_conn, tenant_novo, "t", "s2", {"x": 1}, dedupe_key="k1")
-    b = chain.append(app_conn, tenant_novo, "t", "s2", {"x": 1}, dedupe_key="k1")
+    a, criado_a = chain.append(app_conn, tenant_novo, "t", "s2", {"x": 1}, "k1")
+    b, criado_b = chain.append(app_conn, tenant_novo, "t", "s2", {"x": 1}, "k1")
+    assert criado_a and not criado_b
     assert (a.seq, a.hash, a.id) == (b.seq, b.hash, b.id)
     total = admin_conn.execute(
         "select count(*) from core.events where tenant_id = %s", (tenant_novo,)
