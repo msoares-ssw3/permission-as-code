@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+psycopg[binary]
+pydantic
+boto3
+pyyaml
+pytest
+hypothesis
+httpx
+ruff
