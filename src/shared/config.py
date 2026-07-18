@@ -1,6 +1,12 @@
 """Configuração via variáveis de ambiente."""
 
 import os
+from pathlib import Path
+
+RAIZ = Path(__file__).resolve().parent.parent.parent
+
+# Diretório das regras versionadas (rules/*.yaml).
+RULES_DIR: Path = Path(os.environ.get("RULES_DIR", str(RAIZ / "rules")))
 
 # Conexão de sistema (migrations e jobs): role administrador, bypass de RLS
 # explícito e justificado.
