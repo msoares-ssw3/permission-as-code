@@ -54,6 +54,10 @@ def verificar_manifest(manifest: dict[str, Any]) -> None:
     genesis), aqui a faixa pode começar em qualquer seq_de — o prev_hash
     do primeiro evento do export é aceito como dado, não recalculado.
     """
+    if manifest["versao"] != VERSAO:
+        raise chain.CadeiaInvalida(
+            f"versão de manifest não suportada: {manifest['versao']}"
+        )
     eventos = manifest["eventos"]
     if not eventos:
         raise chain.CadeiaInvalida("export sem eventos")

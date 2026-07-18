@@ -71,3 +71,10 @@ def test_export_completo_sem_genesis_e_recusado() -> None:
     manifest["eventos"][0]["prev_hash"] = "a" * 64
     with pytest.raises(chain.CadeiaInvalida, match="genesis"):
         verificar_manifest(manifest)
+
+
+def test_versao_desconhecida_e_recusada() -> None:
+    manifest = gerar_manifest(TENANT, _cadeia_fabricada(2), GERADO_EM)
+    manifest["versao"] = 2
+    with pytest.raises(chain.CadeiaInvalida, match="versão"):
+        verificar_manifest(manifest)
