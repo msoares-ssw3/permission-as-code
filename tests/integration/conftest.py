@@ -42,6 +42,19 @@ def tenants() -> dict[str, UUID]:
 
 
 @pytest.fixture
+def tenant_novo() -> UUID:
+    """Tenant limpo, sem eventos — para testes de cadeia (genesis, dedupe, carga)."""
+    with psycopg.connect(DATABASE_URL) as conn:
+        linha = conn.execute(
+            "insert into core.tenants (nome, api_key_hash)"
+            " values ('tenant-s2', 'x') returning id"
+        ).fetchone()
+        assert linha is not None
+        conn.commit()
+    return linha[0]
+
+
+@pytest.fixture
 def admin_conn() -> Iterator[psycopg.Connection]:
     """Conexão de sistema (superuser): bypass de RLS explícito e justificado."""
     with psycopg.connect(DATABASE_URL) as conn:

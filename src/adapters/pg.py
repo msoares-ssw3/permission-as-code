@@ -10,6 +10,6 @@ from uuid import UUID
 import psycopg
 
 
-def set_tenant(conn: psycopg.Connection, tenant_id: UUID) -> None:
+def set_tenant(conn: psycopg.Connection, tenant_id: UUID | str) -> None:
     """Fixa o tenant da transação atual (SET LOCAL via set_config)."""
     conn.execute("select set_config('app.tenant_id', %s, true)", (str(tenant_id),))
