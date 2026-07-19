@@ -12,6 +12,7 @@ from hashlib import sha256
 from typing import Any
 
 GENESIS = "0" * 64
+VERSAO = 1
 ALGORITMO = "sha256(prev_bytes + sha256(canonical))"
 CAMPOS_CANONICOS = ("tenant_id", "seq", "tipo", "origem", "payload", "ts")
 
@@ -36,6 +37,10 @@ def hash_evento(prev_hash: str, corpo: bytes) -> str:
 
 def verificar_manifest(manifest: dict[str, Any]) -> None:
     """Recomputa a cadeia do export; levanta CadeiaInvalida apontando o seq."""
+    if manifest["versao"] != VERSAO:
+        raise CadeiaInvalida(
+            f"versão de manifest não suportada: {manifest['versao']}"
+        )
     eventos = manifest["eventos"]
     if not eventos:
         raise CadeiaInvalida("export sem eventos")
@@ -66,13 +71,23 @@ def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print("uso: python verify.py export.json", file=sys.stderr)
         return 2
-    with open(argv[1], encoding="utf-8") as arquivo:
-        manifest = json.load(arquivo)
+    try:
+        with open(argv[1], encoding="utf-8") as arquivo:
+            manifest = json.load(arquivo)
+    except OSError as erro:
+        print(f"erro ao ler o export: {erro}", file=sys.stderr)
+        return 2
+    except json.JSONDecodeError as erro:
+        print(f"export não é JSON válido: {erro}", file=sys.stderr)
+        return 2
     try:
         verificar_manifest(manifest)
     except CadeiaInvalida as erro:
         print(f"INVÁLIDO: {erro}")
         return 1
+    except (KeyError, TypeError) as erro:
+        print(f"manifest malformado: campo {erro} ausente ou inválido", file=sys.stderr)
+        return 2
     print(
         f"OK: seq {manifest['seq_de']}..{manifest['seq_ate']} íntegro, "
         f"hash_final={manifest['hash_final']}"

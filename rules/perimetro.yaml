@@ -1,0 +1,46 @@
+# Regras de perímetro do Guard — versionadas com vigência (Sessão 5).
+# Mesma id pode ter várias versões com vigências disjuntas; vigente_ate nulo
+# significa vigência aberta. Bordas inclusivas. Valores monetários em INT
+# (centavos/unidade mínima do token) — float é bug de reprovação imediata.
+regras:
+  - id: destino-watchlist
+    versao: 1
+    vigente_de: 2026-01-01
+    vigente_ate: null
+    aplica_a: onchain.transferencia
+    criterio: destino_na_watchlist
+    parametros: {}
+    severidade: alta
+    descricao: Transferência para endereço presente na watchlist do tenant.
+
+  - id: origem-watchlist
+    versao: 1
+    vigente_de: 2026-01-01
+    vigente_ate: null
+    aplica_a: onchain.transferencia
+    criterio: origem_na_watchlist
+    parametros: {}
+    severidade: alta
+    descricao: Transferência originada de endereço presente na watchlist do tenant.
+
+  - id: valor-maximo
+    versao: 1
+    vigente_de: 2026-01-01
+    vigente_ate: 2026-06-30
+    aplica_a: onchain.transferencia
+    criterio: valor_acima_limite
+    parametros:
+      limite: 10000000
+    severidade: media
+    descricao: Transferência acima do limite (unidade mínima, int).
+
+  - id: valor-maximo
+    versao: 2
+    vigente_de: 2026-07-01
+    vigente_ate: null
+    aplica_a: onchain.transferencia
+    criterio: valor_acima_limite
+    parametros:
+      limite: 5000000
+    severidade: media
+    descricao: Transferência acima do limite (unidade mínima, int) — limite reduzido.

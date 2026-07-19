@@ -68,6 +68,42 @@ def test_cli_maquina_limpa_export_integro(tmp_path: Path) -> None:
     assert "OK" in resultado.stdout
 
 
+def test_versao_desconhecida_e_recusada() -> None:
+    manifest = _manifest_valido()
+    manifest["versao"] = 2
+    with pytest.raises(verify.CadeiaInvalida, match="versão"):
+        verify.verificar_manifest(manifest)
+
+
+def _roda_cli(caminho: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(VERIFY_PY), str(caminho)],
+        capture_output=True, text=True,
+    )
+
+
+def test_cli_arquivo_inexistente_exit_2(tmp_path: Path) -> None:
+    resultado = _roda_cli(tmp_path / "nao-existe.json")
+    assert resultado.returncode == 2
+    assert resultado.stderr.strip() != ""
+
+
+def test_cli_json_invalido_exit_2(tmp_path: Path) -> None:
+    quebrado = tmp_path / "quebrado.json"
+    quebrado.write_text("{isso não é json", encoding="utf-8")
+    resultado = _roda_cli(quebrado)
+    assert resultado.returncode == 2
+    assert resultado.stderr.strip() != ""
+
+
+def test_cli_manifest_sem_campos_exit_2(tmp_path: Path) -> None:
+    incompleto = tmp_path / "incompleto.json"
+    incompleto.write_text('{"versao": 1}', encoding="utf-8")
+    resultado = _roda_cli(incompleto)
+    assert resultado.returncode == 2
+    assert resultado.stderr.strip() != ""
+
+
 def test_cli_export_adulterado_falha_apontando_seq(tmp_path: Path) -> None:
     manifest = _manifest_valido()
     manifest["eventos"][0]["payload"] = {"n": 999}
